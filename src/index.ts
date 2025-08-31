@@ -1,0 +1,116 @@
+import { selectOptionInput, textInput } from "./functions/inquirer";
+import chalk from "chalk";
+import ora from "ora";
+import { CreatePuppeteer } from "./puppeteer/init";
+import { waitFor } from "./functions/common";
+
+const prebuildMessages = {
+
+    captchaQuestion: {
+        message: "Is your WordPress login page using any robot preveting algo?",
+        choices: [
+            {
+                name: "Yes",
+                value: "yes",
+            },
+            {
+                name: "No",
+                value: "no",
+            }
+        ]
+    },
+    wordpressLoginUrl: {
+        message: "Please provide WordPress login URL:"
+    },
+    wordpressCredentials: {
+        usernameMessage: "WordPress Username:",
+        passwordMessage: "WordPress Password:",
+    }
+}
+
+async function main() {
+
+    while (true) {
+        console.clear();
+        console.log("\n")
+
+        const isProtected = await selectOptionInput({
+            message: prebuildMessages.captchaQuestion.message,
+            choices: prebuildMessages.captchaQuestion.choices || [],
+        })
+
+        console.log("\n")
+
+        if (isProtected === "yes") {
+            const message = chalk.yellow("Please consider temporarily deactivating otherwise the upload will fail!");
+            console.log(message, "\n");
+        }
+
+
+        let wordpressUrl = await textInput(prebuildMessages.wordpressLoginUrl.message);
+        wordpressUrl = wordpressUrl.trim();
+
+        if (!URL.canParse(wordpressUrl)) {
+            console.log(
+                "\n",
+                chalk.red("Wordpress Login URL is invalid!"),
+            );
+
+            break;
+        }
+
+        console.log("\n")
+
+        const username = await textInput(prebuildMessages.wordpressCredentials.usernameMessage)
+        const password = await textInput(prebuildMessages.wordpressCredentials.passwordMessage)
+
+        console.log("\n");
+
+        let spinner = ora("Login in to WordPress").start();
+
+        const puppeteer = new CreatePuppeteer();
+        await puppeteer.init()
+        
+        await puppeteer.openUrl(wordpressUrl);
+        await puppeteer.focusAndTypeOnElement("#user_login", username)
+        await puppeteer.focusAndTypeOnElement("#user_pass", password);
+
+        await puppeteer.submitForm("#wp-submit");
+
+        if (URL.canParse(puppeteer.currentPage?.url() || "")) {
+            const url = URL.parse(puppeteer.currentPage?.url() || "");
+            if (url?.pathname === "/wp-login.php") {
+                spinner.fail("WordPress username or password is incorrect.");
+                await puppeteer.closeBrowser();
+                break;
+            }
+        }
+
+        spinner.succeed("Wordpress Logged in Successfully!");
+
+        await waitFor(5000);
+
+        await puppeteer.closeBrowser();
+        console.log("\n")
+        const exit = await selectOptionInput({
+            message: "Do you wish to exit or continue with another one?",
+            choices: [
+                {
+                    name: "Exit",
+                    value: "exit",
+                },
+                {
+                    name: "Continue",
+                    value: "continue",
+                }
+            ],
+        });
+
+        if (exit === "exit") {
+            break;
+        }
+
+    }
+}
+
+main();
