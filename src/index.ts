@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { CreatePuppeteer } from "./puppeteer/init";
 import { waitFor } from "./functions/common";
+import { fetchDocHtmlContent } from "./google_doc";
 
 const prebuildMessages = {
 
@@ -25,6 +26,9 @@ const prebuildMessages = {
     wordpressCredentials: {
         usernameMessage: "WordPress Username:",
         passwordMessage: "WordPress Password:",
+    },
+    documentAskQuestions: {
+        message: "Please provide Blog Content Google document link: (link should be accessable by anyone.)",
     }
 }
 
@@ -70,7 +74,7 @@ async function main() {
 
         const puppeteer = new CreatePuppeteer();
         await puppeteer.init()
-        
+
         await puppeteer.openUrl(wordpressUrl);
         await puppeteer.focusAndTypeOnElement("#user_login", username)
         await puppeteer.focusAndTypeOnElement("#user_pass", password);
@@ -87,6 +91,10 @@ async function main() {
         }
 
         spinner.succeed("Wordpress Logged in Successfully!");
+
+        const documentUrl = await textInput(prebuildMessages.documentAskQuestions.message)
+
+        await fetchDocHtmlContent({docUrl: documentUrl})
 
         await waitFor(5000);
 
