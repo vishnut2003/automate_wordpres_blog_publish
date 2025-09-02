@@ -1,5 +1,7 @@
 import axios from "axios";
 import { handleCatchBlock } from "../functions/common"
+import { createJSDOM } from "./createJSDOM";
+import { createContentStructure } from "./createContentStructure";
 
 export async function fetchDocHtmlContent({ docUrl }: {
     docUrl: string,
@@ -22,9 +24,11 @@ export async function fetchDocHtmlContent({ docUrl }: {
 
             const {
                 data: htmlContent,
-            } = await axios.get(requestUrl);
+            } = await axios.get<string>(requestUrl);
 
-            console.log(htmlContent);
+            const jsdom = await createJSDOM(htmlContent);
+
+            await createContentStructure(jsdom);
 
             return resolve();
 
