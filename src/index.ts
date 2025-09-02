@@ -122,7 +122,28 @@ async function main() {
 
         spinner.succeed("Wordpress Logged in Successfully!");
 
-        await waitFor(5000);
+        spinner = ora("Publishing Blog...").start();
+
+        const siteUrlObject = URL.parse(wordpressUrl) as URL;
+
+        siteUrlObject.pathname = "/wp-admin/post-new.php";
+
+        // Open Wordpress Add New Post Page
+        await puppeteer.openUrl(siteUrlObject.href);
+
+        await puppeteer.focusAndTypeOnElement("#title", blogDetails.title);
+        await puppeteer.clickElement("#content-html");
+
+        await puppeteer.waitForElement("#content");
+
+        await puppeteer.focusAndTypeOnElement("#content", blogDetails.content);
+        await puppeteer.clickElement("#content-tmce");
+
+        await puppeteer.submitForm("#publish");
+
+        await waitFor(10000)
+
+        spinner.succeed("Blog published...");
 
         await puppeteer.closeBrowser();
         console.log("\n")

@@ -9,6 +9,7 @@ export class CreatePuppeteer {
     async init() {
         this.browser = await puppeteer.launch({
             headless: false,
+            timeout: 0,
         });
         await this.createNewPage();
     }
@@ -46,6 +47,16 @@ export class CreatePuppeteer {
             await this.currentPage?.click(selector),
             await this.currentPage?.waitForNavigation({ waitUntil: "load" }),
         ])
+    }
+
+    async clickElement (selector: string) {
+        this.handleEmptyCurrentPage();
+        await this.currentPage?.click(selector);
+    }
+
+    async waitForElement (selector: string) {
+        this.handleEmptyCurrentPage();
+        await this.currentPage?.waitForSelector(selector);
     }
 
     handleEmptyBrowser() {
