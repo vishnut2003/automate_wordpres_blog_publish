@@ -1,12 +1,12 @@
 import axios from "axios";
 import { handleCatchBlock } from "../functions/common"
 import { createJSDOM } from "./createJSDOM";
-import { createContentStructure } from "./createContentStructure";
+import { BlogContentDetails, createContentStructure } from "./createContentStructure";
 
 export async function fetchDocHtmlContent({ docUrl }: {
     docUrl: string,
 }) {
-    return new Promise<void>(async (resolve, reject) => {
+    return new Promise<BlogContentDetails>(async (resolve, reject) => {
         try {
 
             if (!URL.canParse(docUrl)) {
@@ -28,9 +28,9 @@ export async function fetchDocHtmlContent({ docUrl }: {
 
             const jsdom = await createJSDOM(htmlContent);
 
-            await createContentStructure(jsdom);
+            const blogDetails = await createContentStructure(jsdom);
 
-            return resolve();
+            return resolve(blogDetails);
 
         } catch (err) {
             const message = handleCatchBlock(err);

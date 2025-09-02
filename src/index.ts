@@ -2,7 +2,7 @@ import { selectOptionInput, textInput } from "./functions/inquirer";
 import chalk from "chalk";
 import ora from "ora";
 import { CreatePuppeteer } from "./puppeteer/init";
-import { waitFor } from "./functions/common";
+import { handleCatchBlock, waitFor } from "./functions/common";
 import { fetchDocHtmlContent } from "./google_doc";
 
 const prebuildMessages = {
@@ -29,6 +29,19 @@ const prebuildMessages = {
     },
     documentAskQuestions: {
         message: "Please provide Blog Content Google document link: (link should be accessable by anyone.)",
+    },
+    finalConfirmation: {
+        message: "Please confirm for publish.",
+        options: [
+            {
+                name: "Confirm",
+                value: "confirm",
+            },
+            {
+                name: "Cancel",
+                value: "cancel",
+            }
+        ]
     }
 }
 
@@ -70,6 +83,23 @@ async function main() {
 
         console.log("\n");
 
+        const documentUrl = await textInput(prebuildMessages.documentAskQuestions.message)
+        const blogDetails = await fetchDocHtmlContent({ docUrl: documentUrl });
+
+        console.log(`Blog Title:\n ${blogDetails.title} \n`)
+        console.log(`Blog Content:\n ${blogDetails.content}`);
+
+        console.log("\n");
+
+        const confirm = await selectOptionInput({
+            message: prebuildMessages.finalConfirmation.message,
+            choices: prebuildMessages.finalConfirmation.options,
+        });
+
+        if (confirm === "cancel") {
+            break;
+        }
+
         let spinner = ora("Login in to WordPress").start();
 
         const puppeteer = new CreatePuppeteer();
@@ -91,10 +121,6 @@ async function main() {
         }
 
         spinner.succeed("Wordpress Logged in Successfully!");
-
-        const documentUrl = await textInput(prebuildMessages.documentAskQuestions.message)
-
-        await fetchDocHtmlContent({docUrl: documentUrl})
 
         await waitFor(5000);
 
@@ -121,4 +147,11 @@ async function main() {
     }
 }
 
-main();
+(async () => {
+    try {
+        await main();
+    } catch (err) {
+        const message = handleCatchBlock(err);
+        console.log(chalk.red(message));
+    }
+})()
